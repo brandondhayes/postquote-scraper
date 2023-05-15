@@ -10,7 +10,7 @@ from config import *
 
 BASE_URL = 'https://forums.example.com/forumdisplay.php/6'      # URL to subforum to scan
 VARS_URL = '?pp=200'                                            # number of threads per page
-pagecount = 1                                                   # max number of threads to scan
+pagecount = 41                                                   # max number of threads to scan
 
 db = Database(host="localhost", user="root", password="", database="postquote_scraper")
 

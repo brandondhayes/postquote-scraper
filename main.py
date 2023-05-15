@@ -61,7 +61,7 @@ for threadid in tqdm(targets, desc='Target Threads'):
                 posttime = current_post.find('span', class_='date').get_text().replace('\xa0', ' ')
                 posttime = datetime.datetime.strptime(posttime, "%m/%d/%Y, %I:%M %p").strftime("%Y-%m-%d %H:%M:%S")
             except:
-                #print("Bad userinfo, skipping...")
+                # Not a member, skip
                 continue
 
             postsDB[postid] = {
@@ -78,36 +78,38 @@ for threadid in tqdm(targets, desc='Target Threads'):
 
                 # Try to get an alias and postid
                 try:
-                    quote = {
-                        'postid':   int(quote_block.find('a').get('href').split('#post')[1]),
-                        'alias':    quote_block.find('strong').get_text()
-                    }
+
+                    quote_postid = int(quote_block.find('a').get('href').split('#post')[1])
+                    quote_alias = quote_block.find('strong').get_text()
+                    # quote = {
+                    #     'postid':   int(quote_block.find('a').get('href').split('#post')[1]),
+                    #     'alias':    quote_block.find('strong').get_text()
+                    # }
                 except:
                     # Bad quote block, ignore
                     continue
 
-                op = quote['postid']
+                if quote_postid in postsDB:
+                    if quote_alias != postsDB[quote_postid]['username']:
 
-                if op in postsDB and (quote['alias'] != postsDB[op]['username']):
+                        # If name is different from current, log it
+                        conflict = {
+                            'threadid':     threadid,
+                            'mentionedin':  postid,
+                            'mentiontime':  posttime,
+                            'alias':        quote_alias,
+                            'userid':       postsDB[quote_postid]['userid']
+                        }
 
-                    # If name is different from current, log it
-                    conflict = {
-                        'threadid':     threadid,
-                        'mentionedin':  postid,
-                        'mentiontime':  posttime,
-                        'alias':        quote['alias'],
-                        'userid':       postsDB[op]['userid']
-                    }
+                        # Record mention
+                        db.addMention(conflict)
 
-                    # Record mention
-                    db.addMention(conflict)
-
-                    # Log the user's username as it exists today
-                    activeuser = {
-                        'userid':       postsDB[op]['userid'],
-                        'username':     postsDB[op]['username']
-                    }
-                    db.addActiveUser(activeuser)
+                        # Log the user's username as it exists today
+                        activeuser = {
+                            'userid':       postsDB[quote_postid]['userid'],
+                            'username':     postsDB[quote_postid]['username']
+                        }
+                        db.addActiveUser(activeuser)
 
                 else:
 
@@ -116,7 +118,7 @@ for threadid in tqdm(targets, desc='Target Threads'):
                         'threadid':     threadid,
                         'mentionedin':  postid,
                         'mentiontime':  posttime,
-                        'alias':        quote['alias'],
+                        'alias':        quote_alias,
                         'userid':       None
                     }
                     db.addMention(missing)
